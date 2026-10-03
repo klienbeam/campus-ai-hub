@@ -1,0 +1,33 @@
+{% extends "password_reset/base.html" %}
+{% load i18n %}
+{% load static %}
+{% load bootstrap4 %}
+
+{% block title %}重置密码{% endblock title %}
+
+{% block content %}
+<div class="container">
+	<div class="row justify-content-center">
+		<div class="col-md-6">
+			{% if invalid %}
+			{% url "password_reset_recover" as recovery_url %}
+			<div class="alert alert-danger" role="alert">
+				<p class="text-center" style="font-size: 15px; margin: 0">{% blocktrans %}抱歉，这个密码重置链接无效。你仍然可以<a
+						href="{{ recovery_url }}">请求一个新的链接</a>.{% endblocktrans %}</p>
+			</div>
+			{% else %}
+			<h2 class="mt-5 mb-3 text-center">重置密码</h2>
+			<p class="text-center">{% blocktrans %}用户<strong>{{ username }}</strong>你好！设置你的新密码{% endblocktrans %}</p>
+			<form method="post" action="{% url 'password_reset_reset' token %}" class="form" id="reset_password_form">
+				{% csrf_token %}
+				{% bootstrap_form form layout='horizontal' %}
+
+				<div class="text-center mt-3">
+					<button type="submit" class="btn btn-primary btn-block">{% trans "设置新密码" %}</button>
+				</div>
+			</form>
+			{% endif %}
+		</div>
+	</div>
+</div>
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}首页 - OA智能问答平台{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 欢迎区域 -->
+    <div class="jumbotron bg-primary text-white text-center">
+        <h1 class="display-4">
+            <i class="fas fa-blog"></i> 欢迎来到OA咨询平台
+        </h1>
+        <p class="lead">分享校内一手资讯，交流思想，记录生活</p>
+        <hr class="my-4">
+        <p>在这里，您可以阅读OA章程，发表评论，还可以使用AI智能问答功能快速获取信息。</p>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <a class="btn btn-light btn-lg" href="{% url 'article:list' %}" role="button">
+                    <i class="fas fa-list"></i> 浏览文章
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a class="btn btn-outline-light btn-lg" href="{% url 'rag:qa' %}" role="button">
+                    <i class="fas fa-robot"></i> 智能问答
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速问答区域 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-question-circle"></i> 快速问答
+                    </h5>
+                    <small class="text-muted">基于校内OA文件内容的智能问答</small>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="quick-question" placeholder="快速提问，例如：最新的校内讲座有哪些？" maxlength="200">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button" id="quick-ask-btn">
+                                <i class="fas fa-search"></i> 快速提问
+                            </button>
+                        </div>
+                    </div>
+                    <div id="quick-answer" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <strong>回答：</strong>
+                            <div id="quick-answer-text"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最新文章预览 -->
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="fas fa-newspaper"></i> 最新文章
+            </h3>
+        </div>
+    </div>
+    
+    <div class="row" id="latest-articles">
+        <!-- 文章将通过AJAX加载 -->
+        <div class="col-12 text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">加载中...</span>
+            </div>
+            <p class="mt-2 text-muted">正在加载最新文章...</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.jumbotron {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.article-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.article-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quickQuestion = document.getElementById('quick-question');
+    const quickAskBtn = document.getElementById('quick-ask-btn');
+    const quickAnswer = document.getElementById('quick-answer');
+    const quickAnswerText = document.getElementById('quick-answer-text');
+    const latestArticles = document.getElementById('latest-articles');
+    
+    // 加载最新文章
+    loadLatestArticles();
+    
+    // 快速问答功能
+    quickAskBtn.addEventListener('click', function() {
+        const question = quickQuestion.value.trim();
+        if (!question) {
+            alert('请输入问题');
+            return;
+        }
+        
+        quickAskBtn.disabled = true;
+        quickAskBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 思考中...';
+        
+        fetch('/rag/api/ask/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({question: question})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                quickAnswerText.innerHTML = '抱歉，处理您的问题时出现了错误：' + data.error;
+            } else {
+                quickAnswerText.innerHTML = data.answer;
+            }
+            quickAnswer.style.display = 'block';
+            quickAnswer.scrollIntoView({ behavior: 'smooth' });
+        })
+        .catch(error => {
+            quickAnswerText.innerHTML = '网络错误，请稍后重试';
+            quickAnswer.style.display = 'block';
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            quickAskBtn.disabled = false;
+            quickAskBtn.innerHTML = '<i class="fas fa-search"></i> 快速提问';
+        });
+    });
+    
+    quickQuestion.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            quickAskBtn.click();
+        }
+    });
+    
+    function loadLatestArticles() {
+        fetch('/article/api/latest/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.articles && data.articles.length > 0) {
+                displayArticles(data.articles);
+            } else {
+                latestArticles.innerHTML = '<div class="col-12 text-center"><p class="text-muted">暂无文章</p></div>';
+            }
+        })
+        .catch(error => {
+            latestArticles.innerHTML = '<div class="col-12 text-center"><p class="text-danger">加载文章失败</p></div>';
+            console.error('Error:', error);
+        });
+    }
+    
+    function displayArticles(articles) {
+        let html = '';
+        articles.forEach(article => {
+            html += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card article-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="${article.url}" class="text-decoration-none">${article.title}</a>
+                            </h5>
+                            <p class="card-text text-muted">${article.excerpt}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> ${article.author} | 
+                                    <i class="fas fa-calendar"></i> ${article.created}
+                                </small>
+                                <small class="text-muted">
+                                    <i class="fas fa-eye"></i> ${article.views} 次阅读
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        latestArticles.innerHTML = html;
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

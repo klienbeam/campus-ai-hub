@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.sqlite3
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+media/
+logs/
+rag/chroma_db/
+models/
+.idea/
+.vscode/
+.DS_Store

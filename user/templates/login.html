@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}登录{% endblock title %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="mt-5 mb-3">登录</h2>
+            <form method="post" action="." class="form" id="login_form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="id_username">用户名:</label>
+                    <input type="text" name="username" class="form-control" id="id_username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_password">密码:</label>
+                    <input type="password" name="password" class="form-control" id="id_password" required>
+                </div>
+
+                <!-- 错误消息显示 -->
+                {% for field in form %}
+                {% if field.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ field.errors }}
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                <div class="text-center mt-3">
+                    <button type="submit" class="btn btn-primary btn-block">提交</button>
+                </div>
+            </form>
+            <small class="form-text text-muted ml-1">
+                还没有账号？
+                <a href="{% url 'user:register' %}" style="color: cornflowerblue;">
+                    注册账号
+                </a>
+            </small>
+            <!-- 暂时注释掉密码重置功能
+            <small class="form-text text-muted mt-2 ml-1">
+                忘记密码了？
+                <a href="{% url 'password_reset_recover' %}" style="color: cornflowerblue;">
+                    重置密码
+                </a>
+            </small>
+            -->
+        </div>
+    </div>
+</div>
+{% endblock content %}

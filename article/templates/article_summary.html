@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章总结</title>
+    <style>
+        /* 页面基础样式 */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(-45deg, #1e90ff, #87ceeb, #4682b4, #00bfff);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: #333;
+        }
+
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* 容器样式 */
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9); /* 半透明白色背景 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        /* 标题样式 */
+        h1 {
+            text-align: center;
+            color: #1e90ff;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #1e90ff;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        /* 段落样式 */
+        p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        p strong {
+            color: #1e90ff;
+        }
+
+        /* 表单样式 */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: #1e90ff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #1c86ee;
+        }
+
+        /* 响应式布局 */
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            input[type="text"], button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>文章总结</h1>
+        <p><strong>总结内容:</strong> {{ summary }}</p>
+
+        <h2>提问功能</h2>
+        <form method="post" action="">
+            {% csrf_token %}
+            <label for="question">输入你的问题:</label>
+            <input type="text" id="question" name="question" required>
+            <button type="submit">提交</button>
+        </form>
+        <p><strong>问题回答:</strong> {{ response }}</p>
+    </div>
+</body>
+</html>

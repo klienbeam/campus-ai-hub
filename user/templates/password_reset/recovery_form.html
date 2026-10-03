@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load bootstrap4 %}
+
+{% block title %}重置密码{% endblock title %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <h2 class="mt-5 mb-3 text-center">重置密码</h2>
+      <form method="post" action="." class="form" id="reset_password_form">
+        {% csrf_token %}
+        <div class="form-group row align-items-center">
+          <label for="username_or_email" class="col-sm-3 col-form-label">用户名或者邮箱</label>
+          <div class="col-sm-9">
+            <input type="text" name="username_or_email" class="form-control" id="username_or_email"
+              placeholder="请输入用户名或邮箱" required>
+          </div>
+        </div>
+
+        <!-- 错误消息显示 -->
+        {% for field in form %}
+        {% if field.errors %}
+        <div class="alert alert-danger" role="alert">
+          <p style="font-size: 17px; margin: 0;">
+            用户或邮箱不存在。请重试！
+          </p>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+        <div class="text-center mt-3">
+          <button type="submit" class="btn btn-primary btn-block">发送</button>
+        </div>
+      </form>
+      <small class="form-text text-muted text-center mt-3">
+        记得密码了？
+        <a href="{% url 'user:login' %}" style="color: cornflowerblue;">
+          返回登录
+        </a>
+      </small>
+    </div>
+  </div>
+</div>
+{% endblock content %}

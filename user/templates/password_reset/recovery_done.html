@@ -1,0 +1,22 @@
+{% extends "password_reset/base.html" %}
+{% load i18n %}
+{% load static %}
+{% load bootstrap4 %}
+
+{% block title %}{% trans "新密码设置成功" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+	<div class="row justify-content-center">
+		<div class="col-md-6 text-center">
+			<h2 class="mt-5 mb-4">{% trans "密码重置成功" %}</h2>
+			<p class="lead">
+				{% trans "你的密码已经重置成功，返回登录吧!" %}
+			</p>
+			<a href="{% url 'user:login' %}" class="btn btn-primary mt-3">
+				{% trans "返回登录" %}
+			</a>
+		</div>
+	</div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% load notifications_tags %}
+{% notifications_unread as unread_count %}
+
+<!-- 定义导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <!-- 导航栏的容器 -->
+    <div class="container">
+        <!-- 导航栏品牌 -->
+        <a class="navbar-brand" href="#">基于大模型Deepseek的智能博客平台</a>
+        <!-- 响应式切换按钮 -->
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <!-- 导航内容 -->
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ml-auto">
+                <!-- 文章链接 -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'article:list' %}">文章</a>
+                </li>
+                {% if user.is_authenticated %}
+                    <!-- 如果用户已认证 -->
+                    <li class="nav-item dropdown">
+                        <!-- 用户下拉菜单 -->
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            {% if unread_count %}
+                                <!-- 未读消息标记 -->
+                                <svg viewBox="0 0 8 8" width="8px" height="8px">
+                                    <circle cx="4" cy="4" r="4" fill="#ff6b6b"></circle>
+                                </svg>
+                            {% endif %}
+                            {{ user.username }}
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="{% url "notice:list" %}">
+                                通知 {% if unread_count %}<span class="badge badge-danger">{{ unread_count }}</span>{% endif %}
+                            </a>
+                            <a class="dropdown-item" href="{% url 'article:newpage' %}">写文章</a>
+                            <a class="dropdown-item" href='{% url "user:edit" user.id %}'>个人信息</a>
+                            <a class="dropdown-item" href="#" onclick="user_delete()">删除用户</a>
+                            <a class="dropdown-item" href='{% url "user:logout" %}'>退出登录</a>
+                        </div>
+                    </li>
+                {% else %}
+                    <!-- 未认证用户登录链接 -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'user:login' %}">登录</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+{% if user.is_authenticated %}
+    <!-- 删除用户表单 -->
+    <form style="display:none;" id="user_delete" action="{% url 'user:delete' user.id %}" method="POST">
+        {% csrf_token %}
+        <button type="submit">发送</button>
+    </form>
+    <script>
+        // 删除用户确认弹窗
+        function user_delete() {
+            layer.open({
+                title: "确认删除",
+                content: "确认删除用户资料吗？",
+                yes: function(index, layero) {
+                    $('form#user_delete button').click();
+                    layer.close(index);
+                },
+            })
+        }
+    </script>
+{% endif %}

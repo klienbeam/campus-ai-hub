@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}智能问答 - 博客平台{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-robot"></i> 智能问答助手
+                    </h4>
+                    <small class="text-muted">基于博客内容的智能问答系统</small>
+                </div>
+                <div class="card-body">
+                    <!-- 问答区域 -->
+                    <div id="qa-container" class="mb-4">
+                        <div class="chat-messages" id="chat-messages" style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; background-color: #f8f9fa;">
+                            <div class="welcome-message text-center text-muted">
+                                <i class="fas fa-comments fa-3x mb-3"></i>
+                                <p>欢迎使用智能问答助手！您可以询问任何关于博客内容的问题。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 输入区域 -->
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="question-input" placeholder="请输入您的问题..." maxlength="500">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button" id="ask-btn">
+                                <i class="fas fa-paper-plane"></i> 提问
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 加载状态 -->
+                    <div id="loading" class="text-center mt-3" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">思考中...</span>
+                        </div>
+                        <p class="mt-2 text-muted">AI正在思考中，请稍候...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- 相关文章 -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-link"></i> 相关文章
+                    </h6>
+                </div>
+                <div class="card-body" id="related-articles">
+                    <p class="text-muted">暂无相关文章</p>
+                </div>
+            </div>
+            
+            <!-- 问答历史 -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history"></i> 最近问答
+                    </h6>
+                </div>
+                <div class="card-body" id="qa-history">
+                    <p class="text-muted">暂无历史记录</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 80%;
+}
+
+.user-message {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto;
+    text-align: right;
+}
+
+.ai-message {
+    background-color: #e9ecef;
+    color: #333;
+    margin-right: auto;
+}
+
+.related-article-item {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.related-article-item:hover {
+    background-color: #f8f9fa;
+}
+
+.related-article-item:last-child {
+    border-bottom: none;
+}
+
+.related-article-title {
+    font-weight: 500;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.related-article-title:hover {
+    text-decoration: underline;
+}
+
+.related-article-meta {
+    font-size: 0.8em;
+    color: #6c757d;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const questionInput = document.getElementById('question-input');
+    const askBtn = document.getElementById('ask-btn');
+    const chatMessages = document.getElementById('chat-messages');
+    const loading = document.getElementById('loading');
+    const relatedArticles = document.getElementById('related-articles');
+    const qaHistory = document.getElementById('qa-history');
+    
+    // 加载问答历史
+    loadQaHistory();
+    
+    // 提问功能
+    askBtn.addEventListener('click', askQuestion);
+    questionInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            askQuestion();
+        }
+    });
+    
+    function askQuestion() {
+        const question = questionInput.value.trim();
+        if (!question) {
+            alert('请输入问题');
+            return;
+        }
+        
+        // 显示用户问题
+        addMessage(question, 'user');
+        questionInput.value = '';
+        
+        // 显示加载状态
+        showLoading(true);
+        
+        // 发送请求
+        fetch('/rag/api/ask/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({question: question})
+        })
+        .then(response => response.json())
+        .then(data => {
+            showLoading(false);
+            if (data.error) {
+                addMessage('抱歉，处理您的问题时出现了错误：' + data.error, 'ai');
+            } else {
+                addMessage(data.answer, 'ai');
+                updateRelatedArticles(data.related_articles);
+                loadQaHistory(); // 刷新历史记录
+            }
+        })
+        .catch(error => {
+            showLoading(false);
+            addMessage('网络错误，请稍后重试', 'ai');
+            console.error('Error:', error);
+        });
+    }
+    
+    function addMessage(message, type) {
+        // 移除欢迎消息
+        const welcomeMessage = chatMessages.querySelector('.welcome-message');
+        if (welcomeMessage) {
+            welcomeMessage.remove();
+        }
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${type}-message`;
+        messageDiv.textContent = message;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function showLoading(show) {
+        loading.style.display = show ? 'block' : 'none';
+        askBtn.disabled = show;
+    }
+    
+    function updateRelatedArticles(articles) {
+        if (!articles || articles.length === 0) {
+            relatedArticles.innerHTML = '<p class="text-muted">暂无相关文章</p>';
+            return;
+        }
+        
+        let html = '';
+        articles.forEach(article => {
+            html += `
+                <div class="related-article-item">
+                    <a href="${article.url}" class="related-article-title">${article.title}</a>
+                    <div class="related-article-meta">
+                        作者：${article.author} | ${article.created}
+                    </div>
+                </div>
+            `;
+        });
+        relatedArticles.innerHTML = html;
+    }
+    
+    function loadQaHistory() {
+        fetch('/rag/api/history/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error loading history:', data.error);
+                return;
+            }
+            
+            if (!data.history || data.history.length === 0) {
+                qaHistory.innerHTML = '<p class="text-muted">暂无历史记录</p>';
+                return;
+            }
+            
+            let html = '';
+            data.history.forEach(item => {
+                html += `
+                    <div class="mb-2">
+                        <div class="font-weight-bold text-primary">${item.question}</div>
+                        <div class="text-muted small">${item.answer}</div>
+                        <div class="text-muted" style="font-size: 0.7em;">${item.created_at}</div>
+                    </div>
+                `;
+            });
+            qaHistory.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading history:', error);
+        });
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
